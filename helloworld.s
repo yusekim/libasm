@@ -1,19 +1,19 @@
 section .data
-    message db "Hello, World!", 0xA ; 문자열 데이터 (개행 문자 포함)
-    message_len equ $ - message     ; 문자열 길이 계산
+    msg db "Hello, World!", 0xA     ; 출력할 문자열과 줄바꿈 문자
+    len equ $ - msg                 ; 문자열 길이 계산 (현재 주소 - msg 시작 주소)
 
 section .text
-    global _start                   ; 링커가 찾을 진입점 정의
+    global _start                   ; 엔트리 포인트 정의
 
 _start:
-    ; 시스템 호출: write
-    mov rax, 0x2000004              ; 시스템 호출 번호: write (macOS)
-    mov rdi, 1                      ; 파일 디스크립터: 표준 출력(stdout)
-    lea rsi, [rel message]          ; 출력할 문자열 주소
-    mov rdx, message_len            ; 출력할 문자열 길이
+    ; write 시스템 호출
+    mov rax, 0x2000004              ; syscall 번호: write
+    mov rdi, 1                      ; 파일 디스크립터: stdout
+    lea rsi, [rel msg]              ; 출력할 문자열 주소 (relocation-safe 방식)
+    mov rdx, len                    ; 문자열 길이
     syscall                         ; 시스템 호출 실행
 
-    ; 시스템 호출: exit
-    mov rax, 0x2000001              ; 시스템 호출 번호: exit (macOS)
-    xor rdi, rdi                    ; 종료 코드: 0
+    ; exit 시스템 호출
+    mov rax, 0x2000001              ; syscall 번호: exit
+    xor rdi, rdi                    ; 반환 코드 0 (exit(0))
     syscall                         ; 시스템 호출 실행
