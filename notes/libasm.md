@@ -57,8 +57,7 @@ derp:
 	je lemme_outta_here ; if it's equal, then jump
 	mov rax,999 ; not executed *if* we jump
 
-lemme_outta_here:
-	ret
+lemme_outta_here:	ret
 ```
 
 ```nasm
@@ -68,8 +67,7 @@ lemme_outta_here:
 	jl lemme_outta_here ; if it's less, then jump
 	mov rax,999 ; not executed *if* we jump
 
-lemme_outta_here:
-	ret
+lemme_outta_here:	ret
 ```
 
 ### 어셈블리어에서의 반복문
@@ -162,7 +160,7 @@ x86-64의 System V ABI나 Windows x64 ABI 모두 함수 호출 시 스택 정렬
 ---
 
 `call` 명령어를 사용하여 함수를 호출할 수 있다. 호출된 함수는 `ret`을 활용하여 값을 반환할 수 있다.
-함수 호출을 하게 되면, 기본적으로 어셈블러는 호출된 함수가 파일 뒷부분에 정의되었다고 간주한다. `exit` 등 외부에서 정의된 변수나 함수를 현재 파일에서 사용하려면, `extern`키워드를 사용하여 선언해야 한다.
+함수 호출을 하게 되면, 기본적으로 어셈블러는 호출된 함수가 파일 뒷부분에 정의되었다고 간주한다. `exit` 등 외부에서 정의된 변수나 함수를 현재 파일에서 사용하려면, `extern`키워드(_의사 명령어, Pseudo-Instruction_)를 사용하여 선언해야 한다.
 
 ```nasm
 ; calling UNIX function "exit"
@@ -199,8 +197,7 @@ section .text
     global _start
     extern printf              ; C 표준 라이브러리 printf 함수
 
-_start:
-    ; 스택 정렬 확인
+_start:    ; 스택 정렬 확인
     push rdx                   ; 홀수 번의 push로 스택 정렬 (임시로 rdx 사용)
 
     ; printf 호출
@@ -219,7 +216,175 @@ _start:
 
 
 
-> __Stack Frame?__
-_스택 프레임(Staack Frame)_ 은 함수가 호출될 때마다 함수의 실행 환경(매개변수, 지역 변수, 반환 주소 등)을 저장하기 위해 스택 위에 형성되는 메모리 영역. 함수가 호출될 대마다 새로운 스택 프레임이 할당되고, 함수가 종료되면 해당 스택 프레임은 정리되면 이전 함수의 스택 프레임으로 되돌아가는 구조를 형성한다.
+#### Stack Frame? Prologue & Epilogue?
+__스택 프레임(Stack Frame)__ 은 함수가 호출될 때마다 함수의 실행 환경(매개변수, 지역 변수, 반환 주소 등)을 저장하기 위해 스택 위에 형성되는 메모리 영역이다. 함수가 호출될 대마다 새로운 스택 프레임이 할당되고, 함수가 종료되면 해당 스택 프레임은 정리되며 이전 함수(caller)의 스택 프레임으로 되돌아가는 구조를 형성한다.
 이를 통해 함수의 독립적인 실행 환경을 보장하고, 함수 간에 데이터와 제어 흐름을 안전하게 관리할 수 있다.
 RBP(Base Pointer)레지스터는 함수가 실행될 때 해당 함수의 스텍 프레임을 기준점으로 삼는 레지스터이다.
+
+__프롤로그(Prologue), 에필로그(Epilogue)__: 함수가 시작할 때와 끝날 때 수행하는 일정한 패턴의 코드
+- __프롤로그(함수가 시작할 때)__
+	1. 이전 함수의 베이스 포인터(RBP) 저장
+	함수는 스택 프레임을 추적하기 위해 `rbp`레지스터를 활용하는데, 프롤로그에서 현재의 rbp(호출자 함수의 rbp)를 스택에 `push`해서 나중에 복원할 수 있게 한다.
+	2. 새로운 스택 프레임 생성
+	`mov rbp, rsp`명령으로 현재 스택 포인터 rsp를 rbp에 복사해서 새로운 기준점을 잡아준다. 이렇게 하면 `rbp`를 기준으로 지역 변수나 인자에 쉽게 접근할 수 있다.
+	3. 지역 변수 공간 확보
+	함수 내에 필요한 지역 변수가 있다면 `sub rsp, <필요한 크기>`로 스택을 아래로 내려서 메모리를 확보. 이 공간에 지역 변수를 저장할 수 있다.
+
+- __에필로그(함수가 끝날 때)__
+	1. 지역 변수 공간 반환
+	`add rsp, <확보했던 크기>`를 해서 스택을 원래 자리로 돌려놓는다.
+	2. 이전 베이스 포인터 복원
+	`pop rbp`를 해서 처음에 프롤로그에서 저장해둔 이전 함수의 `rbp`값을 꺼내서 복원. 이를 통해 스택 상태는 함수 호출 전과 거의 동일해짐
+	3. `ret`로 함수 종료
+	`ret`명령어를 통해 스택 상에 저장되어 있던 리턴 주소로 돌아가며 함수가 끝난다.
+
+### 어셈블리어에서의 함수 정의
+어셈에서의 함수 정의는 `jmp`와 비슷하다, 근데 `ret`을 곁들인..
+```nasm
+mov rdi,7 ; pass a function parameter
+call otherFunction  ; run the function below, until it does "ret"
+add rax,1 ; modify returned value
+ret
+
+otherFunction: ; a function "declaration" in assembly
+	mov rax,rdi ; return our function's only argument
+	ret
+```
+이 코드에선, `call otherFunction`을 통해 otherFunction의 리턴값을 받고, 이를 +1 하여 최종적으로 반환한다. 만약 `call`대신 `jmp`를 넣었다면 `add rax,1` 과 `ret` 는 스킵되어 실행되지 않고, 대신 otherFunction의 리턴값이 최종 반환값이 될 것이다.
+
+#### `global`키워드(의사 명령어)를 통해 작성한 함수를 외부 파일에서도 사용하게 하기
+기본적으로 어셈블리에서 정의한 심볼(함수명)은 로컬 범위에 한정되어 있기 때문에, 키워드 `global`을 통해 외부에 공개하고, 외부 파일에선 `extern`을 통해 타겟 함수를 불러와야 한다.
+
+### 레지스터 크기와 오버플로우
+보통 한 자료형이 가질 수 있는 값의 범위보다 큰 값이 들어올 경우, __오버플로우__ 가 발생하고, 범위 바깥의 비트들은 무시된다.
+```C
+int big=1024*1024*1024;
+return big*4; // 오버플로우 발생!! 0이 반환된다.
+```
+
+어셈블리에선 `jo`(jump if overflow)로 오버플로우 발생 여부를 확인할 수 있다!
+```nasm
+mov edi,1 ; loop variable
+mov eax,0 ; counter
+
+start:	add eax,1 ; increment bit counter
+
+	add edi,edi ; add variable to itself
+	jo noes ; check for overflow in the above add
+
+	cmp edi,0
+	jne start
+
+ret
+
+noes: ; called for overflow
+	mov eax,999
+	ret
+```
+
+#### 어셈블리 레지스터 크기
+다양한 자료형처럼, 레지스터들도 크기별로 존재한다
+- rax: 64bit `long`자료형 크기의 레지스터
+- eax: 32bit `int`자료형 크기의 레지스터
+- ax: 16bit `short`자료형 크기의 레지스터
+- al: 8bit `char`자료형 크기의 레지스터
+	- ah: al과 같은 크기의 레지스터, ax의 상위 8비트
+
+```nasm
+mov rcx,0xf00d00d2beefc03; load a big 64-bit constant
+mov eax,ecx; pull out low 32 bits (0x2beefc03)
+ret
+```
+![registers by its size](./imgs/registers_by_size.png)
+
+### 메모리와 포인터
+예시 코드를 보자..
+```nasm
+mov rax, rsp ; return the address of the top of the stack
+ret
+
+; [주솟값]: 해당 주소에 있는 데이터값을 반환
+mov rax, [rsp] ; load the value on top of the stack
+ret
+```
+#### 어셈블리어에서의 라벨링(labeling)
+```nasm
+bar:	dq 3; dq stands for "Data Quadword", 64 bit constant
+foo:	mov rax,bar ; load the address of the 3
+	mov rax,[bar] ; load the value 3 from the memory
+```
+
+도대체 `dq`가 뭐지??? 검색해보았더니..
+
+#### 의사 명령어(Pseudo-Instructions)??
+의사 명령어(Pseudo-Instructions), 즉 실제 x86의 명령어는 아니지만(기계어로 변환되지 않음) 사용의 용이성을 위해 명령어 필드에 두고 사용되는 키워드들로, 어셈블러가 코드 생성 과정에서 사용하는 메타 정보나 데이터 정의용으로 사용된다.
+- 데이터 정의
+`db`, `dw`, `dd`, `dq` 등으로 데이터 섹션에 정해진 크기의 정수나 문자열을 선언할 수 있다.
+- 심볼 관리
+`global`, `extern` 등으로 심볼(함수명, 변수명)의 가시성을 제어할 수 있다.
+- 섹션 관리
+`section .text`, `section .data` 등으로 코드나 데이터가 들어갈 섹션을 지정할 수 있다.
+- 정렬, 매크로, 조건부 어셈블
+`align`, `%define`, `%ifdef` 같은 것들로 어셈블리 코드 구조를 유연하게 작성할 수 있다.
+```nasm
+;예시 코드
+section .data
+    msg db "Hello, World!",0  ; pseudo-instruction 중 하나인 'db'. 문자열(바이트 배열) 정의
+    num dq 1234567890123456   ; pseudo-instruction 중 하나인 'dq'. 64비트 정수 정의
+
+section .text
+    global _start
+_start:    ; 실제 CPU 명령어 (기계어로 변환됨)
+    mov rax,1        ; write syscall 번호
+    mov rdi,1        ; stdout
+    mov rsi,msg       ; msg 주소
+    mov rdx,13       ; 길이
+    syscall
+
+    mov rax,60       ; exit syscall
+    xor rdi,rdi
+    syscall
+```
+더 많은 정보는: [NASM 공식문서](https://www.nasm.us/xdoc/2.16.03/html/nasmdoc3.html)
+
+### 어셈블리어에서의 문자열
+먼저 C에서의 문자열 출력 코드를 살펴보자
+```C
+const char *theString="Yo!";
+puts(theString);
+```
+C컴파일러는 내부적으로 이 코드를..
+- 문자열을 위한 메모리 공간을 마련하고, 마련된 공간에 `Y`, `o`, `!` 그리고 문자열의 끝을 알리는 특수문자인 `nul`을 집어넣는다
+- theString 포인터에게 마련된 메모리 주소를 가리키도록 한다
+
+어셈블리에서는..
+- 메모리 공간을 의사 명령어 `db`(Data byte)를 통해 마련하고, 그곳에 문자열을 할당한다.
+	- C와 다르게 '', "", \`\` 전부 사용가능하지만 `\n`같은 문자는 \`\` 에서만 사용가능하다
+- 직접 널문자를 `0`을 뒤에 작성함으로서 추가한다.
+- jump label을 통해 해당 주소를 가리킨다
+
+```nasm
+mov rdi, theString ; rdi points to our string
+extern puts  ; declare the function
+call puts    ; call it
+ret
+
+theString:	; label, just like for jumping
+	db `Yo!`,0  ; data bytes for string (don't forget nul!)
+```
+---
+##### `db`는 1byte인줄 알았는데 어케 "Yo!\0"를 전부 저장해?!
+`db`는 한 번에 하나의 바이트만 정의하는 것이 아니라, **여러 바이트를 나열하여 한 줄에 정의**할 수 있는 의사 명령어입니다. 즉, `db "Yo!",0`라고 쓰면 `"Y"`, `"o"`, `"!"`, 그리고 `0`(널 종단자) 이 네 개의 바이트를 순서대로 메모리에 배치하게 됩니다.
+
+__왜 가능한가?__
+- `db`(define byte) 지시어는 뒤에 오는 값을 모두 바이트 단위로 나열해 메모리에 할당합니다.
+- 문자열 리터럴 `"Yo!"`는 `'Y' (0x59)`, `'o' (0x6F)`, `'!' (0x21)` 이렇게 3바이트이며, 마지막에 `0`을 추가해 총 4바이트가 됩니다.
+- 예를 들어:
+  ```asm
+  db 'Y','o','!',0
+  ```
+  와 같은 형태로 해석되며, 각각의 문자가 1바이트씩 총 4바이트를 차지하게 됩니다.
+
+__정리__
+- `db`는 1바이트 단위로 데이터를 정의하는 의사 명령어지만, 여러 인수를 쉼표로 구분하거나 문자열을 사용하면 여러 개의 바이트를 연속해서 정의할 수 있습니다.
+- `"Yo!"`는 세 개의 바이트, 마지막의 `0`은 널 종단자(1바이트), 총 4바이트가 `db` 명령을 통해 연속해서 메모리에 저장됩니다.
