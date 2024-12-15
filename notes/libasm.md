@@ -388,3 +388,110 @@ __왜 가능한가?__
 __정리__
 - `db`는 1바이트 단위로 데이터를 정의하는 의사 명령어지만, 여러 인수를 쉼표로 구분하거나 문자열을 사용하면 여러 개의 바이트를 연속해서 정의할 수 있습니다.
 - `"Yo!"`는 세 개의 바이트, 마지막의 `0`은 널 종단자(1바이트), 총 4바이트가 `db` 명령을 통해 연속해서 메모리에 저장됩니다.
+
+
+#### 주소 산술
+스택에서와 반대로, 주솟값에 더하기 연산을 통해 다음 데이터셋의 값에 접근할 수 있다
+```nasm
+dos_equis:	dq 5   ; writes this constant into a "Data Qword" (8 byte block)
+	dq 13  ; writes another constant, at [dos_equis+8] (bytes)
+
+foo:	mov rax, [dos_equis] ; read memory at this label
+	ret ; return value will be 5
+```
+```nasm
+dos_equis:	dq 5   ; writes this constant into a "Data Qword" (8 byte block)
+	dq 13  ; writes another constant, at [dos_equis+8] (bytes)
+
+foo:	mov rax, [dos_equis+8] ; read memory at this label, plus 8 bytes
+	ret ; return value will be 13
+```
+만약 0보다 크고 8보다 작은 값을 주소에 더하게 되면, 5를 표현하는 비트의 일부와 13을 표현하는 비트의 일부가 섞여 의도하지 않은 값이 리턴된다
+
+#### 배열 생성과 접근
+C와 마찬가지로, 어셈블리어에서의 배열은 연속된 메모리에 저장된 데이터들이다. 배열의 값에 접근하기 위해서는, 데이터셋의 크기와 주소를 지정해주어야 한다.
+```nasm
+mov rcx,my_arr ; rcx == address of the array
+mov rax,QWORD [rcx+1*8] ; load element 1 of array
+ret
+
+my_arr:  dq 4 ; array element 0, stored at [my_arr]
+  dq 7 ; array element 1, stored at [my_arr+8]
+  dq 9 ; array element 2, stored at [my_arr+16]
+```
+
+__배열 순회__
+```nasm
+mov rdi,stringStart
+again:	cmp BYTE[rdi],'a' ; did we hit the letter 'a'?
+	add rdi,1 ; move pointer down the string
+	jne again  ; if not, keep looking
+
+extern puts
+call puts
+ret
+
+stringStart:	db 'this is a great string',0
+```
+
+### 어셈블리어에서 메모리 쓰기 가능하게 만들기: section .data
+기본적으로, `db`를 통해 초기화된 문자열은 프로그램의 실행 코드의 일부로 간주되기 때문에, 수정이 불가능하다(수정을 시도하면 프로그램 충돌이 발생한다). 하지만 `section .data`지시어를 통해 문자열을 수정 가능한 메모리에 위치시킬 수 있다.
+```nasm
+mov rdi, daString ; pointer to string
+mov BYTE [rdi+0], 'Y'; change the string's bytes
+extern puts
+call puts ; print the string
+ret
+
+section .data ; switch storage mode to modifiable data
+daString:	db `No.`,0    ; sets bytes of string in memory
+```
+
+- `section .data`: 초기화가 되어있지만, 읽기/쓰기가 가능하다
+- `section .rodata`: 읽기 전용으로(수정이 불가능), 여러 프로그램 간 공유가 가능하다
+- `section .bss`: 읽기/쓰기가 가능하며, 선언시 내부가 0으로 초기화되어있다.
+- `section .text`: 기본설정값으로, 프로그램의 실행 코드이다(기계어, 즉 이진으로 이루어져 있다)
+C/C++에서 전역(global) 또는 정적(static) 변수들 중 초깃값이 있는 변수들은 `.data`영역에 저장되어 있고, 그렇지 않은 변수들은 `.bss`에 저장되어 있다. 만약 상수(const)라면 .rodata에 저장된다.
+
+
+### malloc으로 어셈에서 동적할당 하기
+`malloc()`은 메모리의 __힙__ 영역에 메모리를 할당하는 표준 C 라이브러리 함수이다. 할당된 메모리의 해제는 `free()`를 통해 할 수 있다.
+```C
+// C에서의 동적 할당
+int len=3;
+int *arr=(int *)malloc(len*sizeof(int));
+int i;
+for (i=0;i<len;i++)
+	arr[i]=7+i;
+iarray_print(arr,len);
+free(arr);
+```
+```nasm
+; 어셈블리에서의 동적 할당
+mov rdi,8  ; a byte count to allocate
+extern malloc
+call malloc
+; rax is start of our array
+
+mov QWORD[rax],3 ; yay writeable memory!
+
+mov rdi,rax ; pointer to deallocate
+extern free
+call free
+
+ret
+```
+
+#### 코드 짜면서 알게된 사실들..
+- 문제 1: ft_strlen을 작성을 완료하고 테스트용 C코드를 작성하고 각각을 컴파일을 완료하고 이들을 링킹하려고 하는데, C코드에서 함수를 찾을 수 없음
+	- `nm main.o`를 하면, main.o 파일에서 ft_strlen의 이름을 가진 함수가 아닌 _ft_strlen의 이름을 가진 함수를 찾는다!
+	- 이는 맥 클러스터에 있는 C 컴파일러가 링커 심볼 테이블에 함수명을 저장할 때 심볼 이름 앞에 `_`를 붙여서 생긴 문제였다!
+- 문제 2: ft_strcmp 작성중 리턴값이 int형이 아닌 unsinged int로 나오는 문제가 발생!
+	- 총 8바이트의 레지스터를 리턴하는데, 실제로 작성된 부분은 하위 1바이트 부분(char - char)이라 최상단에 위치한 부호비트가 켜지지 않아 생기는 문제
+	- 부호 값을 유지하며 큰 레지스터에 맞춰 `mov`를 시켜주는 `movsx`를 활용하여 해결!
+		- unsinged 값을 다룰 때는 `movsz`를 사용하자
+- `syscall`이 실패하면 `carry bit`가 켜진다. `carry bit`는 일반적으로 덧셈 또는 뺄셈을 진행할 때 올림/버림이 발생하면 켜지는 비트인데, `syscall`이 실패할때도 켜진다..
+
+#### `test eax, eax` vs `cmp eax, 0`
+`test`는 들어온 두 개의 인자들에 대해 비트연산 AND를 진행하고, `cmp`는 두 인자의 차(substraction)연산을 통해 둘을 비교한다. 두 명령어 모두 연산의 결괏값은 버린다. `test`는 논리 연산, `cmp`는 산술 연산을 사용한다는 차이가 있다. 현대의 x86프로세스 기준 둘의 성능 차이는 유의미하지 않기 때문에, 사용 목적과 의도에 맞게끔 선택해서 사용하자.
+[참고 링크(Stack overflow)](https://stackoverflow.com/q/39556649)
