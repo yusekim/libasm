@@ -19,6 +19,7 @@ clean:
 
 fclean: clean
 	rm -f $(NAME) test main.o
+	rm -f empty_file.txt test_output.txt
 
 re: fclean all
 

@@ -5,7 +5,7 @@
 ### 어셈블리 기본규칙
 1. 대소문자 구분이 없다
 2. 줄바꿈으로 명령어를 구분한다(`;`는 주석)
-	`mov rcx, 5; mov rax, 3; Whoops!`
+	`mov rcx, 5; mov rax, 3 는 mov 부터 주석처리..`
 3. 한 줄에 하나의 명령어만 작성한다
 4. 변수 대신 CPU안의 저장소인 레지스터를 활용한다.
 
@@ -20,7 +20,7 @@ return a // c언어에서의 덧셈
 ```nasm
 mov rax, 3
 mov rcx, 7
-add rax, rcx
+add rax, rcx ; rax 레지스터의 값 + rcx 레지스터의 값을 더한 뒤 rax에 저장
 ret ; 어셈블리에서의 덧셈
 ```
 
@@ -33,8 +33,7 @@ ret ; 어셈블리에서의 덧셈
 	mov rax,3
 	jmp derp
 	mov rax,999 ; not executed!
-derp:
-	ret
+derp:	ret
 ```
 ```C
 // C or C++ goto
@@ -64,7 +63,7 @@ lemme_outta_here:	ret
 ; compare and jump-if-less-than("jl")
 	mov rax,1
 	cmp rax,3 ; compare rax with 3..
-	jl lemme_outta_here ; if it's less, then jump
+	jl lemme_outta_here ; if rax's data is less than 3, then jump
 	mov rax,999 ; not executed *if* we jump
 
 lemme_outta_here:	ret
