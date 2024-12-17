@@ -332,12 +332,16 @@ void test_ft_read() {
     printf("\n===================================================================\n");
 	printf("Test Case 5: NULL buffer\n");
 	char *null_buf = NULL;
-	ssize_t result_ft = ft_read(STDIN_FILENO, null_buf, 10);
+	fd = open("test_output.txt", O_RDONLY);
+	ssize_t result_ft = ft_read(fd, null_buf, 10);
 	int errno_ft = errno;
+	close(fd);
 
+	fd = open("test_output.txt", O_RDONLY);
 	errno = 0; // reset errno
-	ssize_t result_sys = read(STDIN_FILENO, null_buf, 10);
+	ssize_t result_sys = read(fd, null_buf, 10);
 	int errno_sys = errno;
+	close(fd);
 
 	printf("File Descriptor: %d\n", STDIN_FILENO);
 	printf("Requested Count: 10\n\n");
@@ -397,10 +401,10 @@ void test_ft_strdup() {
 
 int main() {
 	// test_ft_strlen();
-	test_ft_strcpy();
+	// test_ft_strcpy();
 	// test_ft_strcmp();
 	// test_ft_write();
 	// test_ft_read();
-	// test_ft_strdup();
+	test_ft_strdup();
 	return 0;
 }

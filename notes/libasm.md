@@ -494,3 +494,10 @@ ret
 #### `test eax, eax` vs `cmp eax, 0`
 `test`는 들어온 두 개의 인자들에 대해 비트연산 AND를 진행하고, `cmp`는 두 인자의 차(substraction)연산을 통해 둘을 비교한다. 두 명령어 모두 연산의 결괏값은 버린다. `test`는 논리 연산, `cmp`는 산술 연산을 사용한다는 차이가 있다. 현대의 x86프로세스 기준 둘의 성능 차이는 유의미하지 않기 때문에, 사용 목적과 의도에 맞게끔 선택해서 사용하자.
 [참고 링크(Stack overflow)](https://stackoverflow.com/q/39556649)
+
+#### `syscall`이 실패했을때 반환값과 errno 처리
+- 보통 구글링을 하면, `syscall`이 정상정으로 실행되면 반환값이 rax에 저장되고, `syscall`이 실패하게 되면 -4095 ~ -1 범위의 값이 에러로 리턴된다, 즉 `-errno`의 형태로 rax에 저장된다..
+- 하지만 클러스터 맥 환경에선, `syscall`이 실패하면 `carry bit`가 켜지고 `rax`에는 `errno`값이 양수로 저장된다.
+- 오랜 시간 여러 자료를 훑으며 찾아본 끝에, macOS의 기반이 된 BSD관련 공식 페이지에서 원하는 정보를 찾을 수 있었다!! [FreeBSD](https://docs.freebsd.org/en/books/developers-handbook/x86/#x86-return-values)
+
+[Stack overflow 질문](https://stackoverflow.com/questions/64820365/what-is-the-relation-between-carry-flag-and-syscall-in-assembly-x64-intel-syn?utm_source=chatgpt.com)

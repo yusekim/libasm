@@ -13,15 +13,17 @@ _ft_strdup:
 	inc rdi				; rdi + 1 for null-terminator
 	call _malloc
 	jc error_handle		; carry bit if its on, then jump
-	pop rdx
-	mov rsi, rdx		; _ft_strcpy의 두 번째 인자 (srcs) 설정
+	pop rsi				; _ft_strcpy의 두 번째 인자 (srcs) 설정
 	mov rdi, rax		; _ft_strcpy의 첫 번째 인자 (dest) 설정
+	push rdx
 	call _ft_strcpy
+	pop rdx
 	ret
 
 error_handle:
 	mov rdx, rax		; rax에 저장된 에러 코드 저장
 	call ___error
 	mov [rax], rdx		; store error code in errno
-	xor rax, rax
+	xor rax, rax		; return 0(nullptr)
+	pop rdi
 	ret
