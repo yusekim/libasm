@@ -23,6 +23,7 @@ typedef struct s_list {
 
 int ft_list_size(t_list *begin_list);
 void ft_list_push_front(t_list **begin_list, void *data);
+int ft_atoi_base(char *str, char *base);
 
 void test_ft_strlen() {
 	printf("Running strlen tests...\n");
@@ -555,6 +556,19 @@ void test_ft_list_push_front() {
 	free_list(empty_head);
 }
 
+void test_ft_atoi_base()
+{
+	printf("Running ft_atoi_base tests...\n");
+	printf("\n===================================================================\n");
+	printf("Test Case 1: normal execution\n");
+	printf("str: \"2a\"\n");
+	printf("base: \"0123456789abcdef\"\n");
+
+	char *str = "-b";
+	char *base = "0123456789abcedf";
+	printf("Result: %d\n", ft_atoi_base(str, base));
+}
+
 int main() {
 	// test_ft_strlen();
 	// test_ft_strcpy();
@@ -563,6 +577,7 @@ int main() {
 	// test_ft_read();
 	// test_ft_strdup();
 	// test_ft_list_size();
-	test_ft_list_push_front();
+	// test_ft_list_push_front();
+	test_ft_atoi_base();
 	return 0;
 }
