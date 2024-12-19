@@ -1,6 +1,8 @@
 NAME = libasm.a
-SRC = ft_strlen.s ft_strcpy.s ft_strcmp.s ft_write.s ft_read.s ft_strdup.s
-OBJ = $(SRC:.s=.o)
+BONUS_SRCS = ft_list_size.s ft_list_push_front.s
+SRCS = ft_strlen.s ft_strcpy.s ft_strcmp.s ft_write.s ft_read.s ft_strdup.s ft_list_size.s ft_list_push_front.s
+OBJ = $(SRCS:.s=.o)
+BONUS_OBJ = $(BONUS_SRCS:.s=.o)
 CC = gcc
 NASM = nasm
 NASMFLAGS = -f macho64
@@ -14,8 +16,11 @@ $(NAME): $(OBJ)
 %.o: %.s
 	$(NASM) $(NASMFLAGS) $< -o $@
 
+bonus: $(OBJ) $(BONUS_OBJ)
+	ar rcs $@ $^
+
 clean:
-	rm -f $(OBJ)
+	rm -f $(OBJ) $(BONUS_OBJ)
 
 fclean: clean
 	rm -f $(NAME) test main.o

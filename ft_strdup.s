@@ -22,7 +22,7 @@ _ft_strdup:
 
 error_handle:
 	mov rdx, rax		; rax에 저장된 에러 코드 저장
-	call ___error
+	call ___error		; errno 변수가 저장되는 주소 불러오기
 	mov [rax], rdx		; store error code in errno
 	xor rax, rax		; return 0(nullptr)
 	pop rdi

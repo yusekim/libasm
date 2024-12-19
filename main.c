@@ -5,12 +5,24 @@
 #include <fcntl.h>
 #include <errno.h>
 
+
 char *ft_strcpy(char *dest, const char *src);
 size_t ft_strlen(const char *str);
 int ft_strcmp(const char *s1, const char *s2);
 ssize_t ft_write(int fd, const void *buf, size_t count);
 ssize_t ft_read(int fd, void *buf, size_t count);
 char *ft_strdup(const char *s);
+
+
+// BONUS PART
+
+typedef struct s_list {
+	void *data;
+	struct s_list *next;
+}	t_list;
+
+int ft_list_size(t_list *begin_list);
+void ft_list_push_front(t_list **begin_list, void *data);
 
 void test_ft_strlen() {
 	printf("Running strlen tests...\n");
@@ -399,12 +411,158 @@ void test_ft_strdup() {
 	compare_with_strdup("String with \t tab, \n newline, and \0 null terminator.");
 }
 
+void test_ft_list_size() {
+	printf("Running ft_list_size tests...\n");
+
+	t_list head, n1, n2, n3, n4, n5;
+	int res;
+
+	// Test Case 1: 단일 노드 테스트
+	printf("\n===================================================================\n");
+	printf("Test Case 1: single node\n");
+	head.next = NULL;
+	printf("Expected return value: 1\n");
+	res = ft_list_size(&head);
+	printf("ft_list_size returns: %d\n", res);
+	printf("Pass: %s\n\n", res == 1 ? "Yes" : "No");
+
+	// Test Case 2: 노드 3개 테스트
+	printf("\n===================================================================\n");
+	printf("Test Case 1: three-linked lists\n");
+	head.next = &n1;
+	n1.next = &n2;
+	n2.next = NULL;
+	printf("Expected return value: 3\n");
+	res = ft_list_size(&head);
+	printf("ft_list_size returns: %d\n", res);
+	printf("Pass: %s\n\n", res == 3 ? "Yes" : "No");
+
+	// Test Case 3: 노드 6개 테스트
+	printf("\n===================================================================\n");
+	printf("Test Case 1: six-linked lists\n");
+	head.next = &n1;
+	n1.next = &n2;
+	n2.next = &n3;
+	n3.next = &n4;
+	n4.next = &n5;
+	n5.next = NULL;
+	printf("Expected return value: 6\n");
+	res = ft_list_size(&head);
+	printf("ft_list_size returns: %d\n", res);
+	printf("Pass: %s\n\n", res == 6 ? "Yes" : "No");
+
+	// Test Case 4: NULL 포인터
+	printf("\n===================================================================\n");
+	printf("Test Case 1: NULL as an argument\n");
+	printf("Expected return value: 0\n");
+	res = ft_list_size(NULL);
+	printf("ft_list_size returns: %d\n", res);
+	printf("Pass: %s\n\n", res == 0 ? "Yes" : "No");
+}
+
+// 리스트 출력 함수
+void print_list(t_list *head) {
+    t_list *current = head; // 리스트의 시작점
+    int index = 0;          // 노드 번호
+
+    printf("Linked List Contents:\n");
+    while (current != NULL) {
+        // data는 void* 이므로 int*로 캐스팅한 후 역참조하여 값을 가져옵니다.
+        int value = *(int *)(current->data);
+
+        // 이쁘게 출력
+        printf("[Node %d] Data: %d\n", index, value);
+
+        // 다음 노드로 이동
+        current = current->next;
+        index++;
+    }
+
+    if (index == 0) {
+        printf("The list is empty.\n");
+    }
+}
+
+void free_list(t_list *head) {
+    t_list *temp;
+    while (head != NULL) {
+        temp = head->next;
+        free(head);
+        head = temp;
+    }
+}
+
+void test_ft_list_push_front() {
+	printf("Running ft_list_push_front tests...\n");
+
+	t_list *head = malloc(sizeof(t_list));
+	int data = 42;
+	int dummy = 1;
+
+	// Test Case 1: 단일 노드 테스트
+	printf("\n===================================================================\n");
+	printf("Test Case 1: single node\n");
+	head->next = NULL;
+	head->data = &dummy;
+	printf("linked list status before\n");
+	print_list(head);
+	ft_list_push_front(&head, &data);
+	printf("linked list status after\n");
+	print_list(head);
+
+	// 테스트 결과 검증
+    if (head && head->data == &data) {
+        printf("Test Case 1 Passed: New node added successfully!\n");
+    } else {
+        printf("Test Case 1 Failed: New node not added as expected.\n");
+    }
+
+	// Test Case 2: 이전 테스트 결과에 노드 하나 더 추가
+	printf("\n===================================================================\n");
+	printf("Test Case 2: push another node to Case 1\n");
+	printf("linked list status before\n");
+	int data2 = 4242;
+	print_list(head);
+	ft_list_push_front(&head, &data2);
+	printf("linked list status after\n");
+	print_list(head);
+
+	// 테스트 결과 검증
+    if (head && head->data == &data2) {
+        printf("Test Case 2 Passed: New node added successfully!\n");
+    } else {
+        printf("Test Case 2 Failed: New node not added as expected.\n");
+    }
+
+	// Test Case 3: begin_list가 NULL 일때
+	printf("\n===================================================================\n");
+	printf("Test Case 3: begin_list is NULL\n");
+	printf("linked list status before\n");
+	print_list(NULL);
+	t_list *empty_head = NULL;
+	ft_list_push_front(&empty_head, &data);
+	printf("linked list status after\n");
+	print_list(empty_head);
+
+	// 테스트 결과 검증
+    if (empty_head && empty_head->data == &data) {
+        printf("Test Case 3 Passed: New node added successfully!\n");
+    } else {
+        printf("Test Case 3 Failed: New node not added as expected.\n");
+    }
+
+	free_list(head);
+	free_list(empty_head);
+}
+
 int main() {
 	// test_ft_strlen();
 	// test_ft_strcpy();
 	// test_ft_strcmp();
 	// test_ft_write();
 	// test_ft_read();
-	test_ft_strdup();
+	// test_ft_strdup();
+	// test_ft_list_size();
+	test_ft_list_push_front();
 	return 0;
 }

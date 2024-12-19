@@ -481,6 +481,82 @@ call free
 ret
 ```
 
+### 어셈블리어에서의 구조체
+C에는 struct를 통해 구조체를 선언하고 이를 활용할 수 있다.
+```C++
+struct student {
+	long ID; // student ID number
+	long grade; // percent grade
+	long awesome; // awesomeness counter
+};
+struct student s;
+s.ID=424242;
+s.grade=98;
+s.awesome=2;
+return s.grade;
+```
+메모리 상에서, `student` 구조체는 `long`자료형 3개를 담고 있는 배열이다. 만약 `rdi`가 `struct s`를 가리키고 있다면, `s.ID` 는 `QWORD[rdi]`, `s.grade`는 `QWORD[rdi + 8]`, 그리고 `s.awsome`은 `QWORD[rdi + 16]`을 통해 접근할 수 있을 것이다.
+```nasm
+mov rdi,studentPtr		; rdi points to struct student
+mov rax,QWORD[rdi+8]	; extract student's grade
+ret
+
+studentPtr:
+	dq 424242			; offset 0: student ID
+	dq 98				; offset 8: student grade
+	dq 2				; offset 16: student awesome counter
+```
+
+#### 연결 리스트
+연결 리스트도 결국 구조체이기 때문에, 메모리상에 일렬로 저장된다.
+```C++
+struct linked_list {
+	long id; // the data in this link: one student ID
+	struct linked_list *next; // the next node, or NULL if none
+};
+struct linked_list tail={7,NULL};
+struct linked_list mid={4,&tail};
+struct linked_list start={2,&mid};
+
+struct linked_list *cur;
+for (cur=&start; cur!=NULL; cur=cur->next) {
+	printf("Node %p has id %ld\n", cur, cur->id);
+}
+```
+
+```nasm
+push rbx
+mov rbx,listStart
+
+loopAgain:
+	mov rdi,QWORD[rbx] ; load student ID
+	extern print_int
+	call print_int
+	mov rbx,QWORD[rbx+8] ; move to next student
+	cmp rbx,0 ; check for NULL
+	jne loopAgain
+
+pop rbx
+ret
+
+listStart:
+	dq 2       ; offset 0: student ID
+	dq listMid ; offset 8: next link
+
+listMid:
+	dq 4       ; offset 0: student ID
+	dq listEnd ; offset 8: next link
+
+listEnd:
+	dq 7       ; offset 0: student ID
+	dq 0       ; offset 8: next link (0 indicates the end of the list)
+```
+
+
+
+
+
+
 #### 코드 짜면서 알게된 사실들..
 - 문제 1: ft_strlen을 작성을 완료하고 테스트용 C코드를 작성하고 각각을 컴파일을 완료하고 이들을 링킹하려고 하는데, C코드에서 함수를 찾을 수 없음
 	- `nm main.o`를 하면, main.o 파일에서 ft_strlen의 이름을 가진 함수가 아닌 _ft_strlen의 이름을 가진 함수를 찾는다!
