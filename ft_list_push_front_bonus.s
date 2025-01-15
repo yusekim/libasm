@@ -3,9 +3,14 @@ extern _malloc
 extern ___error
 section .text
 
+;void ft_list_push_front(t_list **begin_list, void *data);
+
 _ft_list_push_front:
+	cmp rdi, 0
+	je return
 	push rdi			; 매개변수 (**begin_list) 스택에 저장
 	push rsi			; 매개변수(*data) 스택에 저장
+
 
 ; =============== making new node ===============
 	mov rdi, 16			; 노드 한 개의 크기(16byte)설정
