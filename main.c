@@ -639,6 +639,17 @@ void test_ft_atoi_base()
 	res = ft_atoi_base(str, base);
 	printf("Result: %d\n", res);
 	printf("Pass: %s\n\n", (res == 0) ? "Yes" : "No");
+
+	printf("\n===================================================================\n");
+	printf("Test Case 7: str character does not match with the base\n");
+	str = "2z";
+	base = "0123456789abcdef";
+	printf("str: \"%s\"\n", str);
+	printf("base: \"%s\"\n", base);
+
+	res = ft_atoi_base(str, base);
+	printf("Result: %d\n", res);
+	printf("Pass: %s\n\n", (res == 0) ? "Yes" : "No");
 }
 
 int intcmp(void *a, void *b)
@@ -884,13 +895,13 @@ void test_ft_list_remove_if()
 }
 
 int main() {
-	test_ft_strlen();
+	// test_ft_strlen();
 	// test_ft_strcpy();
 	// test_ft_strcmp();
 	// test_ft_write();
 	// test_ft_read();
 	// test_ft_strdup();
-	// test_ft_atoi_base();
+	test_ft_atoi_base();
 	// test_ft_list_size();
 	// test_ft_list_push_front();
 	// test_ft_list_sort();

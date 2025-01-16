@@ -75,6 +75,8 @@ convert_loop1:
 	je invalid_arg				; *str 중간에 '+' 출현시 0 반환
 convert_loop2:
 	mov cl, [r10]				; cl에 *base담기
+	cmp cl, 0					; str내 문자가 base에 없을경우
+	je invalid_arg
 	cmp ch, cl
 	je add_convert				; return_val += counter
 	inc r10						; base++
